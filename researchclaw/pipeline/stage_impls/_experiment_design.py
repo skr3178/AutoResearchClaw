@@ -118,11 +118,25 @@ def _execute_experiment_design(
         except Exception:  # noqa: BLE001
             pass
         # Improvement A: Compute hardware profile + per-condition budget
-        _hw_profile_str = (
-            "- GPU: NVIDIA RTX 6000 Ada (49140 MB VRAM)\n"
-            "- GPU count: 1\n"
-            "- CPU: shared server"
-        )
+        _hw = _load_hardware_profile(run_dir)
+        if _hw:
+            _gpu_name = _hw.get("gpu_name", "unknown")
+            _gpu_type = _hw.get("gpu_type", "cpu")
+            _vram = _hw.get("vram_mb")
+            _tier = _hw.get("tier", "limited")
+            _vram_str = f" ({_vram} MB VRAM)" if _vram else ""
+            _hw_profile_str = (
+                f"- GPU: {_gpu_name}{_vram_str}\n"
+                f"- GPU type: {_gpu_type} (tier: {_tier})\n"
+                f"- GPU count: 1"
+            )
+            if _tier == "limited":
+                _hw_profile_str += (
+                    "\n- NOTE: Limited GPU — design lightweight experiments only "
+                    "(small models, few epochs, small datasets)"
+                )
+        else:
+            _hw_profile_str = "- GPU: none\n- CPU only — design CPU-friendly experiments"
         _per_condition_sec = int(config.experiment.time_budget_sec * 0.7 / 6)
         _tier1 = "CIFAR-10, CIFAR-100, MNIST, FashionMNIST, STL-10, SVHN"
 
